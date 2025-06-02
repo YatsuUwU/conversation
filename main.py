@@ -12,7 +12,7 @@ from typing import Optional
 
 # --- Configuration ---
 OLLAMA_BASE_URL = "http://localhost:11434"
-OLLAMA_MODEL_CONFIG = "llama2:latest" # Renamed to avoid conflict with the variable that can be set to None
+OLLAMA_MODEL_CONFIG = "dolphin-mistral:7b" # Renamed to avoid conflict with the variable that can be set to None
 GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
 HUGGINGFACE_API_TOKEN = os.environ.get('HUGGINGFACE_API_TOKEN')
 GROQ_API_KEY = os.environ.get('GROQ_API_KEY')
@@ -108,6 +108,28 @@ def query_groq(prompt, system_message=None, model="llama3-8b-8192"):
         logger.error(f"Groq API request failed: {e}")
         return None
 
+
+project_data = {}
+
+def query_gemini(prompt, model_instance=None, timeout=60):
+    """
+    Query Google Gemini API for text generation.
+    Requires GEMINI_API_KEY environment variable.
+    """
+    if not GEMINI_API_KEY:
+        logger.warning("GEMINI_API_KEY not set. Skipping Gemini query.")
+        return None
+    if model_instance is None:
+        model_instance = gemini_model_instance
+
+    try:
+        logger.info("Querying Gemini model...")
+        response = model_instance.generate_content(prompt, request_options={'timeout': timeout})
+        return response.text.strip()
+    except Exception as e:
+        logger.error(f"Gemini API request failed: {e}")
+        return None
+
 def query_cohere(prompt, model="command-r"):
     """
     Query Cohere API for text generation.
@@ -130,7 +152,7 @@ project_data = {}
 
 def step_1_define_criteria():
     logger.info("\n--- 1️⃣ Define the Checklist Criteria ---")
-    industry = input("Enter the industry or project type (e.g., software project, healthcare AI solution): ")
+    industry = input("Please enter the industry for the software project (e.g., 'FinTech', 'Healthcare', 'E-commerce'): ")
     project_data['industry'] = industry
 
     prompt = f"""
@@ -412,6 +434,72 @@ def step_4_ai_generated_conclusion():
     
     print("\n🏁 AI's Final Recommendation (Gemini):") # User-facing print
     print(project_data['final_conclusion'])
+
+
+def check_ollama_server():
+    """
+    Checks if the Ollama server is running and if the configured model is available.
+    Sets the global OLLAMA_MODEL to None if the server is unreachable or model is not found.
+    """
+    global OLLAMA_MODEL
+    logger.info(f"Attempting to connect to Ollama server at {OLLAMA_BASE_URL}...")
+    try:
+        # Check if server is reachable
+        requests.get(OLLAMA_BASE_URL, timeout=5)
+        logger.info("Ollama server is reachable.")
+
+        # Check if the model is available
+        model_list_url = f"{OLLAMA_BASE_URL}/api/tags"
+        response = requests.get(model_list_url, timeout=5)
+        response.raise_for_status()
+        models = response.json().get("models", [])
+        available_models = [m["name"] for m in models]
+
+        if OLLAMA_MODEL_CONFIG not in available_models:
+            logger.warning(f"🚨 Configured Ollama model '{OLLAMA_MODEL_CONFIG}' not found on server. Available models: {', '.join(available_models) if available_models else 'None'}")
+            OLLAMA_MODEL = None
+        else:
+            logger.info(f"Configured Ollama model '{OLLAMA_MODEL_CONFIG}' is available.")
+
+    except requests.exceptions.ConnectionError:
+        logger.warning(f"🚨 Ollama server not found at {OLLAMA_BASE_URL}. Disabling Ollama functionality.")
+        OLLAMA_MODEL = None
+    except requests.exceptions.Timeout:
+        logger.warning(f"🚨 Connection to Ollama server timed out at {OLLAMA_BASE_URL}. Disabling Ollama functionality.")
+        OLLAMA_MODEL = None
+    except requests.exceptions.RequestException as e:
+        logger.warning(f"🚨 An error occurred while checking Ollama server: {e}. Disabling Ollama functionality.")
+        OLLAMA_MODEL = None
+
+
+def query_ollama(prompt, model=None, timeout=60):
+    """
+    Query the Ollama server for text generation. Returns the generated text or None on failure.
+    """
+    if OLLAMA_MODEL is None:
+        logger.info("Ollama is disabled or unavailable. Skipping Ollama query.")
+        return None
+    if model is None:
+        model = OLLAMA_MODEL
+    api_url = f"{OLLAMA_BASE_URL}/api/generate"
+    payload = {
+        "model": model,
+        "prompt": prompt,
+        "stream": False
+    }
+    try:
+        logger.info(f"Querying Ollama model: {model}")
+        response = requests.post(api_url, json=payload, timeout=timeout)
+        response.raise_for_status()
+        data = response.json()
+        if "response" in data:
+            return data["response"].strip()
+        logger.error(f"Unexpected Ollama response format: {data}")
+        return None
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Ollama API request failed: {e}")
+        return None
+
 
 if __name__ == "__main__":
     print("🚀 AI-Powered Checklist System Prototype 🚀") # User-facing print

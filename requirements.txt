@@ -1,2 +1,6 @@
 requests
 google-generativeai
+cohere
+huggingface_hub
+groq
+typing-extensions

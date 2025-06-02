@@ -24,6 +24,8 @@ The core functionality is implemented in `main.py`, which performs the following
 
 5. **Output**  
    The full project data, including checklist, verification results, debate arguments, and final conclusion, is saved to `project_assessment_output.json`.
+   
+   For automated runs or testing, a `project_assessment_input.json` file can be used to pre-populate the `project_data` dictionary, bypassing interactive input steps. This file should contain the same structure as `project_assessment_output.json`.
 
 ## Configuration
 

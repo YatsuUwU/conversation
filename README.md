@@ -8,7 +8,8 @@ This project provides an AI-driven system to help define, verify, and assess pro
 - Interactive multiprompt verification of checklist items.
 - AI-simulated debate between optimistic and critical personas.
 - Final AI-generated recommendation to proceed or reconsider.
-- Saves detailed assessment results to JSON.
+- Saves detailed assessment results to `project_assessment_output.json`.
+- Supports loading predefined input from `project_assessment_input.json` for automated assessments.
 
 ## Requirements
 - Python 3.x
