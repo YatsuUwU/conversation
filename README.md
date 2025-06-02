@@ -34,3 +34,28 @@ The script uses Python's logging module to provide runtime information and error
 
 ## License
 This project is provided as-is for prototyping and educational purposes.
+
+## Project Diagram
+
+```mermaid
+graph TD
+    A[Start] --> B{Define Checklist Criteria}
+    B --> C{AI Generates Checkpoints}
+    C -- Malformed/Error --> D[Clean/Default Checklist]
+    C -- Valid --> E[Checklist Criteria]
+    D --> E
+    E --> F{Multiprompt Verification}
+    F --> G{AI Generates Questions}
+    G --> H[User Answers Questions]
+    H --> I{AI Analyzes Answers}
+    I --> J[Analysis Report]
+    J --> K{Counterargument Simulation}
+    K --> L{AI Generates Pro-Argument Code}
+    L --> M[Execute Pro-Argument Code]
+    M --> N[Pro-Argument]
+    K --> O{AI Generates Counter-Argument}
+    O --> P[Counter-Argument]
+    N & P --> Q{AI-Generated Conclusion}
+    Q --> R[Final Recommendation]
+    R --> S[End]
+```
